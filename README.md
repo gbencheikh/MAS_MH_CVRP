@@ -14,21 +14,21 @@ This project embraces the **No Free Lunch Theorem** by avoiding any bias toward 
 
 ---
 
-## 🧠 Metaheuristics Implemented
+## Metaheuristics Implemented
 
 Each metaheuristic is encapsulated within an autonomous agent:
 
-- 🧬 Genetic Algorithm (GA)
-- 🐜 Ant Colony Optimization (ACO)
-- 🪶 Particle Swarm Optimization (PSO)
-- ⚽ Golden Ball Algorithm
-- 🧗 Hill Climbing
-- ⛏️ Tabu Search
-- ❄️ Simulated Annealing
+- Genetic Algorithm (GA)
+- Ant Colony Optimization (ACO)
+- Particle Swarm Optimization (PSO)
+- Golden Ball Algorithm
+- Hill Climbing
+- Tabu Search
+- Simulated Annealing
 
 ---
 
-## 🕹️ Multi-Agent Architectures
+## Multi-Agent Architectures
 
 ### 1. **Sequential Architecture**
 Agents are divided into two categories:
@@ -78,14 +78,14 @@ CVRP-MultiMetaheuristics/
 │
 └── examples/                  # Example usage scripts
 
-# 🚀 Getting Started
+# Getting Started
 ```
-git clone https://github.com/M-elj/Multi-Metaheuristics-for-CVRP
-cd Multi-Metaheuristics-for-CVRP
+git clone https://github.com/gbencheikh/MAS_MH_CVRP
+cd MAS_MH_CVRP
 pip install -r requirements.txt
 ``` 
 
-# 📊 The output includes:
+# The output includes:
 
 - Final best solution
 - Total cost (distance)
@@ -96,35 +96,35 @@ pip install -r requirements.txt
 
 Detailed documentation is available in the [`/docs`](./docs) folder, including:
 
-- 📐 [`architecture.md`](./docs/architecture.md): Details about sequential vs collaborative systems
-- 🧪 [`metaheuristics.md`](./docs/metaheuristics.md): All implemented algorithms
-- 🔧 [`usage.md`](./docs/usage.md): How to configure and run experiments
+- [`architecture.md`](./docs/architecture.md): Details about sequential vs collaborative systems
+- [`metaheuristics.md`](./docs/metaheuristics.md): All implemented algorithms
+- [`usage.md`](./docs/usage.md): How to configure and run experiments
 
 ---
 
-## 🌐 No Free Lunch Principle
+## No Free Lunch Principle
 
 This project is designed to **avoid relying on a single metaheuristic**. Instead, it enables:
 
-- ✅ Synergy between strategies  
-- 🔄 Metaheuristic interoperability  
-- 📈 Performance variation handling depending on instance type  
+- Synergy between strategies  
+- Metaheuristic interoperability  
+- Performance variation handling depending on instance type  
 
 Each agent contributes a different search behavior, and their **collaboration** leads to **more robust and adaptable solutions**.
 
 ---
 
-## 📌 Roadmap
+## Roadmap
 
 - [ ] Add logging system  
-- [x] Collaborative environment with thread-safe access  
+- [ ] Collaborative environment with thread-safe access  
 - [ ] Support for dynamic CVRP *(future work)*  
 - [ ] Visual dashboard *(Streamlit)*  
 - [ ] Automated benchmarking over CVRPLIB  
 
 ## Authors 
 Manal 
-Ph.D. student in 
+Ph.D. student
 
 Ghita 
 Lecturer & Researcher 
