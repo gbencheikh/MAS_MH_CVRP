@@ -244,6 +244,17 @@ class Ant_Colony_Optimization:
                 if (node_to, node_from) in self.pheromone_matrix:
                     self.pheromone_matrix[(node_to, node_from)] += delta_pheromone
     
+    def set_initial_solutions(self, solutions: List[VRPSolution]):
+        """
+        Pour ACO : renforcer les phéromones sur les arcs des bonnes solutions.
+        """
+        self.initial_pool_solutions = solutions
+        
+        # Renforcer les phéromones immédiatement
+        for solution in solutions:
+            # Déposer BEAUCOUP de phéromones sur cette bonne solution
+            self._deposit_pheromones_elite(solution, factor=5.0)
+
     def _apply_local_search(self, solution: VRPSolution) -> VRPSolution:
         """
         Applique une recherche locale AGRESSIVE sur une solution.
@@ -423,3 +434,59 @@ class Ant_Colony_Optimization:
                 print(f"  Debug FINAL - Nombre de routes: {len(best_solution.routes)}")
     
         return best_solution
+    
+    def inject_and_continue(self, new_solutions: List[VRPSolution],
+                       max_iterations: int = 20, local_search: bool = True,
+                       seed: int = None, log_history: bool = False, 
+                       verbose: bool = False) -> VRPSolution:
+        """
+        Renforce les phéromones avec de nouvelles solutions et continue.
+        """
+        if seed is not None:
+            random.seed(seed)
+        
+        # Si premier appel, initialiser les phéromones
+        if not hasattr(self, 'iteration_count'):
+            self.iteration_count = 0
+        
+        # Renforcer les phéromones avec les nouvelles solutions
+        for solution in new_solutions:
+            self._deposit_pheromones_elite(solution, factor=5.0)
+        
+        # Continuer l'ACO
+        best_solution = None
+        best_distance = float('inf')
+        
+        for iteration in range(max_iterations):
+            self.iteration_count += 1
+            
+            # Construire solutions avec les fourmis
+            ants = []
+            for _ in range(self.num_ants):
+                ant = Ant(self.instance, self.pheromone_matrix, self.alpha, self.beta)
+                ant.construct_solution()
+                ants.append(ant)
+            
+            # Meilleure de l'itération
+            iteration_best = min(ants, key=lambda a: a.get_solution().total_distance).get_solution()
+            
+            if local_search:
+                iteration_best = self._apply_local_search(iteration_best)
+            
+            if iteration_best.total_distance < best_distance:
+                best_solution = iteration_best._copy_solution()
+                best_distance = best_solution.total_distance
+            
+            # Évaporation et dépôt
+            self._evaporate_pheromones()
+            self._deposit_pheromones(ants)
+            
+            if best_solution:
+                self._deposit_pheromones_elite(best_solution, factor=3.0)
+        
+        if best_solution:
+            best_solution.agent_name = "ACO (continue)"
+            return best_solution
+        
+        # Fallback
+        return new_solutions[0]._copy_solution()

@@ -17,11 +17,12 @@ class Agent:
     Classe de base pour un agent résolvant le CVRP.
     """
     
-    def __init__(self, name: str, instance: VRPInstance, solver, solver_params: Dict):
+    def __init__(self, name: str, instance: VRPInstance, solver, solver_params: Dict = None, run_params: Dict = None):
         self.name = name
         self.instance = instance
         self.solver = solver
-        self.solver_params = solver_params
+        self.solver_params = solver_params or {}
+        self.run_params = run_params or {}
         self.best_solution = None
         self.best_distance = float('inf')
         self.computation_time = 0

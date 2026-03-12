@@ -38,6 +38,12 @@ class Genetic_Algorithm:
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
     
+    def set_initial_solutions(self, solutions: List[VRPSolution]):
+        """
+        Initialiser la population .
+        """
+        self.initial_pool_solutions = solutions
+
     def _initialize_population(self) -> List[VRPSolution]:
         """
         Crée une population initiale de solutions.
@@ -46,7 +52,12 @@ class Genetic_Algorithm:
             Liste de solutions initiales
         """
         population = []
-        for _ in range(self.population_size):
+        # 1. D'abord ajouter les solutions du pool (si disponibles)
+        for sol in self.initial_pool_solutions:
+            population.append(sol._copy_solution())
+        
+        # 2. Compléter avec des solutions aléatoires
+        while len(population) < self.population_size:
             solution = VRPSolution(self.instance).generate_solution()
             solution.compute_total_distance()
             population.append(solution)
@@ -367,4 +378,84 @@ class Genetic_Algorithm:
             print(f"Distance finale: {best_distance:.2f}")
             print(f"{'='*60}")
         
+        return best_solution
+    
+    def inject_and_continue(self, new_solutions: List[VRPSolution], 
+                       max_generations: int = 20, seed: int = None,
+                       log_history: bool = False, verbose: bool = False) -> VRPSolution:
+        """
+        Injecte de nouvelles solutions dans la population et continue l'exécution.
+        
+        Args:
+            new_solutions: Nouvelles solutions du pool
+            max_generations: Nombre de générations à exécuter
+            
+        Returns:
+            Meilleure solution trouvée
+        """
+        if seed is not None:
+            random.seed(seed)
+        
+        # Si c'est le premier appel, initialiser la population
+        if not hasattr(self, 'population') or not self.population:
+            self.population = self._initialize_population()
+            self.generation_count = 0
+        
+        # Remplacer les K pires par les nouvelles solutions
+        if new_solutions:
+            # Trier la population par fitness (pire en dernier)
+            self.population.sort(key=lambda sol: sol.total_distance)
+            
+            # Retirer les K pires
+            num_to_replace = min(len(new_solutions), len(self.population))
+            self.population = self.population[:-num_to_replace]
+            
+            # Ajouter les nouvelles
+            for sol in new_solutions:
+                self.population.append(sol._copy_solution())
+        
+        # Continuer l'évolution
+        best_solution = min(self.population, key=lambda sol: sol.total_distance)._copy_solution()
+        best_distance = best_solution.total_distance
+        
+        for gen in range(max_generations):
+            self.generation_count += 1
+            
+            # Évaluer le fitness
+            fitness_scores = self._evaluate_fitness(self.population)
+            
+            # Trier par fitness
+            sorted_indices = sorted(range(len(self.population)), 
+                                key=lambda i: fitness_scores[i], 
+                                reverse=True)
+            sorted_population = [self.population[i] for i in sorted_indices]
+            
+            # Élite
+            new_population = sorted_population[:self.elite_size]
+            
+            # Générer le reste
+            while len(new_population) < self.population_size:
+                parent1 = self._tournament_selection(self.population, fitness_scores)
+                parent2 = self._tournament_selection(self.population, fitness_scores)
+                
+                if random.random() < self.crossover_rate:
+                    child = self._crossover(parent1, parent2)
+                else:
+                    child = parent1._copy_solution()
+                
+                if random.random() < self.mutation_rate:
+                    child = self._mutate(child)
+                
+                child.compute_total_distance()
+                new_population.append(child)
+            
+            self.population = new_population
+            
+            # Mettre à jour la meilleure
+            current_best = min(self.population, key=lambda sol: sol.total_distance)
+            if current_best.total_distance < best_distance:
+                best_solution = current_best._copy_solution()
+                best_distance = best_solution.total_distance
+        
+        best_solution.agent_name = "Genetic Algorithm (continue)"
         return best_solution

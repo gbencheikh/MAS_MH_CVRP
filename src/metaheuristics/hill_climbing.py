@@ -109,39 +109,41 @@ class Hill_Climbing:
         
         return current_solution
 
-    def imrove(self, initial_solution, max_iterations: int = 1000, log_history: bool = True, verbose: bool = True) -> VRPSolution:
+    def improve(self, initial_solution: VRPSolution, max_iterations: int = 100, 
+            log_history: bool = False, verbose: bool = False) -> VRPSolution:
         """
-        Algorithme Hill Climbing pour résoudre le CVRP.
+        Améliore une solution existante avec Hill Climbing.
         
         Args:
-            max_iterations: Nombre maximum d'itérations
-            verbose: Afficher les informations de progression
+            initial_solution: Solution de départ (du pool)
+            max_iterations: Nombre d'itérations
+            log_history: Sauvegarder l'historique
+            verbose: Afficher les informations
         
         Returns:
-            La meilleure solution trouvée
+            Solution améliorée
         """
         if log_history:
-            history = initial_solution.history # historique des distances
-            visit_counter = initial_solution.visit_counter
-
+            history = []
+            visit_counter = defaultdict(int)
+        
         start_time = time.time()
         
-        
-        current_solution = initial_solution
+        # Partir de la solution donnée (au lieu de generate_solution())
+        current_solution = initial_solution._copy_solution()
         current_distance = current_solution.total_distance
+        
         if log_history:
             sig = current_solution.solution_signature()
             visit_counter[sig] += 1
-
             history.append({
                 "iteration": 0,
                 "signature": sig,
                 "distance": current_distance
             })
-
+        
         if verbose:
-            print(f"Solution initiale: distance = {current_distance:.2f}")
-            print(f"Nombre de routes: {len(current_solution.routes)}")
+            print(f"Solution initiale (du pool): distance = {current_distance:.2f}")
         
         iteration = 0
         no_improvement_count = 0
@@ -153,15 +155,13 @@ class Hill_Climbing:
             neighbors = generate_neighborhood(current_solution)
             
             if not neighbors:
-                if verbose:
-                    print("Aucun voisin généré, arrêt.")
                 break
             
             # Trouver le meilleur voisin
             best_neighbor = min(neighbors, key=lambda sol: sol.total_distance)
             best_neighbor_distance = best_neighbor.total_distance
             
-            # Si le meilleur voisin est meilleur que la solution courante
+            # Si amélioration
             if best_neighbor_distance < current_distance:
                 current_solution = best_neighbor
                 current_distance = best_neighbor_distance
@@ -170,34 +170,20 @@ class Hill_Climbing:
                 if log_history:
                     sig = current_solution.solution_signature()
                     visit_counter[sig] += 1
-
                     history.append({
                         "iteration": iteration,
                         "signature": sig,
                         "distance": current_distance
                     })
-                
-                if verbose and iteration % 10 == 0:
-                    print(f"Itération {iteration}: nouvelle meilleure distance = {current_distance:.2f}")
             else:
-                # Aucune amélioration trouvée (optimum local atteint)
                 no_improvement_count += 1
-                if no_improvement_count >= 1:  # Arrêt dès le premier optimum local
-                    if verbose:
-                        print(f"Optimum local atteint à l'itération {iteration}")
+                if no_improvement_count >= 1:
                     break
         
         end_time = time.time()
         current_solution.computation_time = end_time - start_time
-        current_solution.agent_name = "Hill Climbing"
+        current_solution.agent_name = "Hill Climbing (improve)"
         
-        if verbose:
-            print(f"\n{'='*60}")
-            print(f"Hill Climbing terminé en {current_solution.computation_time:.2f} secondes")
-            print(f"Nombre d'itérations: {iteration}")
-            print(f"Distance finale: {current_distance:.2f}")
-            print(f"{'='*60}")
-            
         if log_history:
             current_solution.history = history
             current_solution.visit_counter = visit_counter

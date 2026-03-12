@@ -174,3 +174,95 @@ class Tabu_Search:
             print(f"{'='*60}")
         
         return best_solution
+    
+    def improve(self, initial_solution: VRPSolution, max_iterations: int = 50,
+            aspiration: bool = True, log_history: bool = False, 
+            verbose: bool = False) -> VRPSolution:
+        """
+        Améliore une solution existante avec Tabu Search.
+        """
+        start_time = time.time()
+        
+        # Réinitialiser la liste taboue
+        self.tabu_list.clear()
+        
+        # Partir de la solution donnée
+        current_solution = initial_solution._copy_solution()
+        current_distance = current_solution.total_distance
+        
+        # Meilleure solution = celle du départ
+        best_solution = current_solution._copy_solution()
+        best_distance = current_distance
+        
+        if log_history:
+            history = []
+            visit_counter = defaultdict(int)
+            
+            sig = current_solution.solution_signature()
+            visit_counter[sig] += 1
+            history.append({
+                "iteration": 0,
+                "signature": sig,
+                "distance": current_distance
+            })
+        
+        iteration = 0
+        iterations_since_improvement = 0
+        max_no_improvement = max(10, max_iterations // 5)
+        
+        while iteration < max_iterations:
+            iteration += 1
+            
+            neighbors = generate_neighborhood(current_solution)
+            
+            if not neighbors:
+                break
+            
+            # Trouver le meilleur voisin non-tabou
+            best_neighbor = None
+            best_neighbor_distance = float('inf')
+            
+            for neighbor in neighbors:
+                is_tabu = self._is_tabu(neighbor)
+                
+                if not is_tabu or (aspiration and neighbor.total_distance < best_distance):
+                    if neighbor.total_distance < best_neighbor_distance:
+                        best_neighbor = neighbor
+                        best_neighbor_distance = neighbor.total_distance
+            
+            if best_neighbor is None:
+                break
+            
+            current_solution = best_neighbor
+            current_distance = best_neighbor_distance
+            self._add_to_tabu(current_solution)
+            
+            if log_history:
+                sig = current_solution.solution_signature()
+                visit_counter[sig] += 1
+                history.append({
+                    "iteration": iteration,
+                    "signature": sig,
+                    "distance": current_distance
+                })
+            
+            # Mettre à jour la meilleure
+            if current_distance < best_distance:
+                best_solution = current_solution._copy_solution()
+                best_distance = current_distance
+                iterations_since_improvement = 0
+            else:
+                iterations_since_improvement += 1
+            
+            if iterations_since_improvement >= max_no_improvement:
+                break
+        
+        end_time = time.time()
+        best_solution.computation_time = end_time - start_time
+        best_solution.agent_name = "Tabu Search (improve)"
+        
+        if log_history:
+            best_solution.history = history
+            best_solution.visit_counter = visit_counter
+        
+        return best_solution

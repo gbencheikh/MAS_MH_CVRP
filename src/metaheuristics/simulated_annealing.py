@@ -189,3 +189,85 @@ class Simulated_Annealing:
             print(f"{'='*60}")
         
         return best_solution
+    
+    def improve(self, initial_solution: VRPSolution, max_iterations: int = 500,
+            seed: int = None, log_history: bool = False, 
+            verbose: bool = False) -> VRPSolution:
+        """
+        Améliore une solution existante avec Simulated Annealing.
+        """
+        if seed is not None:
+            random.seed(seed)
+        
+        start_time = time.time()
+        
+        # Partir de la solution donnée
+        current_solution = initial_solution._copy_solution()
+        current_distance = current_solution.total_distance
+        
+        best_solution = current_solution._copy_solution()
+        best_distance = current_distance
+        
+        # Température initiale adaptée à la solution
+        temperature = self.initial_temperature
+        
+        if log_history:
+            history = []
+            visit_counter = defaultdict(int)
+            
+            sig = current_solution.solution_signature()
+            visit_counter[sig] += 1
+            history.append({
+                "iteration": 0,
+                "signature": sig,
+                "distance": current_distance
+            })
+        
+        iteration = 0
+        
+        while iteration < max_iterations and temperature > self.min_temperature:
+            iteration += 1
+            
+            neighbors = generate_neighborhood(current_solution)
+            
+            if not neighbors:
+                break
+            
+            # Choisir un voisin aléatoire
+            neighbor = random.choice(neighbors)
+            neighbor_distance = neighbor.total_distance
+            
+            # Acceptation
+            accept_prob = self._acceptance_probability(current_distance, 
+                                                    neighbor_distance, 
+                                                    temperature)
+            
+            if random.random() < accept_prob:
+                current_solution = neighbor
+                current_distance = neighbor_distance
+                
+                if log_history:
+                    sig = current_solution.solution_signature()
+                    visit_counter[sig] += 1
+                    history.append({
+                        "iteration": iteration,
+                        "signature": sig,
+                        "distance": current_distance
+                    })
+                
+                if current_distance < best_distance:
+                    best_solution = current_solution._copy_solution()
+                    best_distance = current_distance
+            
+            # Refroidissement
+            temperature *= self.cooling_rate
+        
+        end_time = time.time()
+        best_solution.computation_time = end_time - start_time
+        best_solution.agent_name = "Simulated Annealing (improve)"
+        
+        if log_history:
+            best_solution.history = history
+            best_solution.visit_counter = visit_counter
+        
+        return best_solution

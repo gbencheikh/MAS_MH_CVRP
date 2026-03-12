@@ -67,11 +67,42 @@ class Particle_Swarm_Optimization:
         self.swarm: List[Particle] = []
         self.global_best_position = None
         self.global_best_distance = float('inf')
+        self.iteration_count = 0
     
+    def set_initial_solutions(self, solutions: List[VRPSolution]):
+        """
+        Initialise certaines particules avec les bonnes solutions du pool.
+        
+        Args:
+            solutions: Liste des meilleures solutions du pool
+        """
+        self.initial_pool_solutions = solutions
+    
+
     def _initialize_swarm(self):
         """Initialise l'essaim de particules."""
         self.swarm = []
-        for _ in range(self.num_particles):
+
+        # 1. D'abord créer des particules avec les solutions du pool
+        for pool_solution in self.initial_pool_solutions[:self.num_particles]:
+            particle = Particle(self.instance)
+            # Remplacer la solution aléatoire par la solution du pool
+            particle.position = pool_solution._copy_solution()
+            particle.position.compute_total_distance()
+            particle.best_position = particle.position._copy_solution()
+            particle.best_distance = particle.position.total_distance
+            
+            self.swarm.append(particle)
+            
+            # Mettre à jour le meilleur global
+            if particle.best_distance < self.global_best_distance:
+                self.global_best_position = particle.best_position._copy_solution()
+                self.global_best_position.compute_total_distance()
+                self.global_best_distance = particle.best_distance
+
+        
+        # 2. Compléter avec des particules aléatoires
+        while len(self.swarm) < self.num_particles:
             particle = Particle(self.instance)
             self.swarm.append(particle)
             
@@ -326,3 +357,55 @@ class Particle_Swarm_Optimization:
         
         self.global_best_position.compute_total_distance()
         return self.global_best_position
+
+    def inject_and_continue(self, new_solutions: List[VRPSolution],
+                       max_iterations: int = 20, seed: int = None,
+                       log_history: bool = False, verbose: bool = False) -> VRPSolution:
+        """
+        Injecte de nouvelles solutions dans l'essaim et continue l'exécution.
+        """
+        if seed is not None:
+            random.seed(seed)
+        
+        # Si premier appel, initialiser l'essaim
+        if not hasattr(self, 'swarm') or not self.swarm:
+            self._initialize_swarm()
+            
+        
+        # Remplacer les K pires particules par les nouvelles solutions
+        if new_solutions:
+            # Trier les particules par performance (pire en dernier)
+            self.swarm.sort(key=lambda p: p.best_distance)
+            
+            num_to_replace = min(len(new_solutions), len(self.swarm))
+            
+            # Remplacer les pires
+            for i in range(num_to_replace):
+                # Créer une nouvelle particule avec la solution du pool
+                new_particle = Particle(self.instance)
+                new_particle.position = new_solutions[i]._copy_solution()
+                new_particle.position.compute_total_distance()
+                new_particle.best_position = new_particle.position._copy_solution()
+                new_particle.best_distance = new_particle.position.total_distance
+                
+                # Remplacer
+                self.swarm[-(i+1)] = new_particle
+                
+                # Mettre à jour le meilleur global
+                if new_particle.best_distance < self.global_best_distance:
+                    self.global_best_position = new_particle.best_position._copy_solution()
+                    self.global_best_distance = new_particle.best_distance
+        
+        # Continuer l'optimisation
+        for _ in range(max_iterations):
+            self.iteration_count += 1
+            
+            for particle in self.swarm:
+                self._update_particle_position(particle)
+                
+                if particle.best_distance < self.global_best_distance:
+                    self.global_best_position = particle.best_position._copy_solution()
+                    self.global_best_distance = particle.best_distance
+        
+        self.global_best_position.agent_name = "PSO (continue)"
+        return self.global_best_position._copy_solution()
