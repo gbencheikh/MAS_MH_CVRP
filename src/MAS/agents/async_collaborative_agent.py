@@ -21,7 +21,7 @@ class AsyncCollaborativeAgent(threading.Thread):
     
     def __init__(self, name: str, instance: VRPInstance, solver_class, 
                  solver_params: Dict, run_params: Dict, 
-                 is_population_based: bool, max_cycles: int = 10):
+                 is_population_based: bool, max_cycles: int = 10, role: str = "balanced"):
         super().__init__()
         self.name = name
         self.instance = instance
@@ -30,6 +30,7 @@ class AsyncCollaborativeAgent(threading.Thread):
         self.run_params = run_params
         self.is_population_based = is_population_based
         self.max_cycles = max_cycles
+        self.role = role
         
         self.pool = None  # Sera assigné avant start()
         self.best_solution = None
@@ -38,13 +39,15 @@ class AsyncCollaborativeAgent(threading.Thread):
         self.solutions_deposited = 0
         self.running = True
     
-    def run(self):
+    def run(self, verbose: bool = False):
         """Thread principal de l'agent."""
-        print(f"[{self.name}] Démarrage...")
+        if verbose:
+            print(f"[{self.name}] Démarrage...")
         
         for cycle in range(self.max_cycles):
             if not self.running or self.pool.is_stagnant():
-                print(f"[{self.name}] Arrêt anticipé (cycle {cycle}, stagnation ou arrêt global)")
+                if verbose:
+                    print(f"[{self.name}] Arrêt anticipé (cycle {cycle}, stagnation ou arrêt global)")
                 break
             
             self.cycles_completed = cycle + 1
@@ -56,10 +59,10 @@ class AsyncCollaborativeAgent(threading.Thread):
             
             # Pause courte pour laisser les autres agents travailler
             time.sleep(0.1)
-        
-        print(f"[{self.name}] Terminé - {self.cycles_completed} cycles, {self.solutions_deposited} solutions déposées, best: {self.best_distance:.2f}")
+        if verbose:
+            print(f"[{self.name}] Terminé - {self.cycles_completed} cycles, {self.solutions_deposited} solutions déposées, best: {self.best_distance:.2f}")
     
-    def _run_iterative_cycle(self, cycle: int):
+    def _run_iterative_cycle(self, cycle: int, verbose: bool = False):
         """
         Cycle pour métaheuristiques itératives (HC, TS, SA).
         1. Récupérer une solution du pool
@@ -70,7 +73,8 @@ class AsyncCollaborativeAgent(threading.Thread):
         initial_solution, sol_id = self.pool.get_unused_solution(self.name)
         
         if initial_solution is None:
-            print(f"[{self.name}] Cycle {cycle}: Aucune solution disponible")
+            if verbose:
+                print(f"[{self.name}] Cycle {cycle}: Aucune solution disponible")
             return
         
         # 2. Créer le solver et lancer avec cette solution initiale
@@ -95,9 +99,10 @@ class AsyncCollaborativeAgent(threading.Thread):
                 self.solutions_deposited += 1
                 self.best_distance = new_solution.total_distance
                 self.best_solution = new_solution
-                print(f"[{self.name}] Cycle {cycle}: Nouvelle meilleure {self.best_distance:.2f} (depuis {sol_id})")
+                if verbose:
+                    print(f"[{self.name}] Cycle {cycle}: Nouvelle meilleure {self.best_distance:.2f} (depuis {sol_id})")
     
-    def _run_population_cycle(self, cycle: int):
+    def _run_population_cycle(self, cycle: int, verbose: bool = False):
         """
         Cycle pour métaheuristiques à population (GA, ACO, PSO, GB).
         1. Récupérer K solutions du pool
@@ -110,7 +115,8 @@ class AsyncCollaborativeAgent(threading.Thread):
         new_solutions = self.pool.get_k_unused_solutions(self.name, k=k)
         
         if not new_solutions:
-            print(f"[{self.name}] Cycle {cycle}: Aucune solution disponible")
+            if verbose:
+                print(f"[{self.name}] Cycle {cycle}: Aucune solution disponible")
             return
         
         # 2 & 3. Créer le solver et injecter les solutions
@@ -145,7 +151,8 @@ class AsyncCollaborativeAgent(threading.Thread):
                 self.solutions_deposited += 1
                 self.best_distance = new_solution.total_distance
                 self.best_solution = new_solution
-                print(f"[{self.name}] Cycle {cycle}: Nouvelle meilleure {self.best_distance:.2f}")
+                if verbose:
+                    print(f"[{self.name}] Cycle {cycle}: Nouvelle meilleure {self.best_distance:.2f}")
     
     def stop(self):
         """Arrêt de l'agent."""

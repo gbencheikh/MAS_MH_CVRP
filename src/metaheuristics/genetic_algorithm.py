@@ -37,6 +37,7 @@ class Genetic_Algorithm:
         self.elite_size = elite_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
+        self.initial_pool_solutions = []
     
     def set_initial_solutions(self, solutions: List[VRPSolution]):
         """

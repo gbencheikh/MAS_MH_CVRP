@@ -68,6 +68,7 @@ class Particle_Swarm_Optimization:
         self.global_best_position = None
         self.global_best_distance = float('inf')
         self.iteration_count = 0
+        self.initial_pool_solutions = []
     
     def set_initial_solutions(self, solutions: List[VRPSolution]):
         """
@@ -99,7 +100,6 @@ class Particle_Swarm_Optimization:
                 self.global_best_position = particle.best_position._copy_solution()
                 self.global_best_position.compute_total_distance()
                 self.global_best_distance = particle.best_distance
-
         
         # 2. Compléter avec des particules aléatoires
         while len(self.swarm) < self.num_particles:

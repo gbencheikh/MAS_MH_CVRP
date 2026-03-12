@@ -223,7 +223,7 @@ def run_multiagent_tests():
             row[f"{agent_name}_max_visits"] = visit_stats['max_visits']
             row[f"{agent_name}_mean_visits"] = visit_stats['mean_visits']
             
-            # ✅ AJOUT: Agréger pour les statistiques MAS globales
+            # AJOUT: Agréger pour les statistiques MAS globales
             mas_total_visits += visit_stats['total_visites']
             
             # Agréger les signatures uniques de tous les agents
@@ -298,7 +298,6 @@ def generate_plots(df, results_dir, date_str):
     """
     section("GÉNÉRATION DES GRAPHIQUES")
     
-    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     results_dir = os.path.join(results_dir, f"graphics_{date_str}")
     
     os.makedirs(results_dir, exist_ok=True)

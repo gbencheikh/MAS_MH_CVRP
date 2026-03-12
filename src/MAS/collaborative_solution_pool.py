@@ -151,6 +151,13 @@ class CollaborativeSolutionPool:
                 return None, float('inf')
             return self.solutions[0][0]._copy_solution(), self.solutions[0][1]
     
+    def get_all(self) -> List[VRPSolution]:
+        """
+        Retourne une copie de toutes les solutions du pool.
+        """
+        with self.lock:
+            return [solution._copy_solution() for solution, _, _, _ in self.solutions]
+        
     def get_stats(self) -> Dict:
         """Retourne les statistiques du pool."""
         with self.lock:
