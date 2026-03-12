@@ -71,7 +71,7 @@ def run_multiagent_tests():
     et sauvegarde les résultats dans Excel.
     """
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    directory_path = os.path.join(current_dir, "..", "data", "simple")
+    directory_path = os.path.join(current_dir, "..", "data", "instances")
     results_dir = os.path.join(current_dir, "..", "results")
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"resultats_MAS_Collaborative_{date_str}.xlsx"
